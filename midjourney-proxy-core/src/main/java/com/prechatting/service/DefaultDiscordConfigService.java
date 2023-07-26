@@ -7,7 +7,6 @@ import java.util.List;
 public class DefaultDiscordConfigService implements DiscordConfigService {
     private int currentIndex = 0;
 
-
     @Override
     public ProxyProperties.DiscordConfig getDiscordConfig(List<ProxyProperties.DiscordConfig> discordConfigs) {
         // Check if the list is not empty

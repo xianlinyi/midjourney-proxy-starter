@@ -1,13 +1,115 @@
-# midjourney-proxy
+# midjourney-proxy-starter
 
-> 更多功能：[midjourney-proxy-plus](https://github.com/litter-coder/midjourney-proxy-plus)
-
-代理 MidJourney 的discord频道，实现api形式调用AI绘图
+> 修改自项目：[midjourney-proxy](https://github.com/novicezk/midjourney-proxy)
 
 [![GitHub release](https://img.shields.io/static/v1?label=release&message=v2.3.5&color=blue)](https://www.github.com/novicezk/midjourney-proxy)
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
-## 现有功能
+### 项目介绍
+适用于springboot框架的，可依赖引入项目的MidJourney 的discord频道代理，实现api形式调用AI绘图。
+
+### 使用方法
+1. 引入依赖
+```xml
+<dependency>
+    <groupId>com.github.novicezk</groupId>
+    <artifactId>midjourney-proxy-starter</artifactId>
+    <version>2.3.5</version>
+</dependency>
+```
+如果你的项目是spring-boot-web项目，需要排除spring-boot-starter-webflux依赖
+```xml
+<dependency>
+    <groupId>com.prechatting</groupId>
+    <artifactId>midjourney-proxy-starter</artifactId>
+    <version>2.3.5</version>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+```
+2. 配置参数
+```yaml
+mj:
+  discord:
+    - guild-id: xxx # discord服务器ID
+      channel-id: xxx # discord频道ID
+      user-token: xxx # discord用户Token
+      session-id: bf90fb2e67fa1c795f470be84dbc2f99 # discord用户的sessionId，不设置时使用默认的，建议从interactions请求中复制替换掉
+      user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36
+      user-wss: true
+    - guild-id: xxx
+      channel-id: xxx
+      user-token: xxx
+      session-id: bf90fb2e67fa1c795f470be84dbc2f99
+      user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36
+      user-wss: true
+  task-store:
+    type: in_memory
+    timeout: 30d
+  translate-way: null
+  queue:
+    timeout-minutes: 5
+    core-size: 3
+    queue-size: 10
+  proxy:
+    host: 127.0.0.1 # 代理host
+    port: 1090 # 代理端口
+```
+3. 调用接口(去掉`/mj`路由，其余与midjourney-proxy一致)
+```
+//例如：
+POST http://IP:端口/submit/imagine
+Content-Type: application/json
+Body:        
+        {
+        "prompt":"a cat",
+        "base64":"data:image/png;base64,i
+        }
+```
+4. 代码调用
+```java
+//例如：
+@Autowired
+private MJService mjService;
+
+@PostMapping(value = "/image")
+public ResultEntity image(@RequestBody SubmitImagineDTO submit) {
+        SubmitResultVO imagine = mjService.imagine(submit);
+        return new ResultEntity().ok().data(imagine);
+        }
+
+@GetMapping(value = "/task/{id}")
+public ResultEntity task(@ApiParam(value = "任务ID") @PathVariable String id) {
+        Task fetch = mjService.fetch(id);
+        return new ResultEntity().ok().data(fetch);
+        }
+```
+5. 自定义账号选择策略
+```java
+// 实现DiscordConfigService接口，重写getDiscordConfig方法，注入容器即可
+import com.prechatting.ProxyProperties;
+import com.prechatting.service.DiscordConfigService;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class PersonalDiscordConfigService implements DiscordConfigService {
+    @Override
+    public ProxyProperties.DiscordConfig getDiscordConfig(List<ProxyProperties.DiscordConfig> discordConfigs) {
+        return discordConfigs.get(0);
+    }
+}
+```
+## 新增功能
+- [x] 支持配置多个discord账号
+- [x] 支持自定义账号选择策略
+
+## 原版功能（与[midjourney-proxy](https://github.com/novicezk/midjourney-proxy)-2.3.5 相同）
 - [x] 支持 Imagine 指令和相关U、V操作
 - [x] Imagine 时支持添加图片base64，作为垫图
 - [x] 支持 Blend(图片混合) 指令和相关U、V操作
@@ -19,11 +121,6 @@
 - [x] user-token 连接 wss，可以获取错误信息和完整功能
 - [x] 支持 discord域名(server、cdn、wss)反代，配置 mj.ng-discord
 
-## 后续计划
-- [ ] 支持 Reroll 操作
-- [ ] 支持配置账号池，分发绘图任务
-- [ ] 修复相关Bug，[Wiki / 已知问题](https://github.com/novicezk/midjourney-proxy/wiki/%E5%B7%B2%E7%9F%A5%E9%97%AE%E9%A2%98)
-
 ## 使用前提
 1. 注册 MidJourney，创建自己的频道，参考 https://docs.midjourney.com/docs/quick-start
 2. 获取用户Token、服务器ID、频道ID：[获取方式](./docs/discord-params.md)
@@ -34,34 +131,6 @@
 3. 默认使用user-wss方式，可以获取midjourney的错误信息、图片变换进度等，但可能会增加账号风险
 4. 支持设置mj.discord.user-wss为false，使用bot-token连接wss，需添加自定义机器人：[流程说明](./docs/discord-bot.md)
 
-## Railway 部署
-基于Railway平台部署，不需要自己的服务器: [部署方式](./docs/railway-start.md)；若Railway不能使用，可用下方的Zeabur部署
-
-## Zeabur 部署
-基于Zeabur平台部署，不需要自己的服务器: [部署方式](./docs/zeabur-start.md)
-
-## Docker 部署
-1. /xxx/xxx/config目录下创建 application.yml(mj配置项)、banned-words.txt(可选，覆盖默认的敏感词文件)；参考src/main/resources下的文件
-2. 启动容器，映射config目录
-```shell
-docker run -d --name midjourney-proxy \
- -p 8080:8080 \
- -v /xxx/xxx/config:/home/spring/config \
- --restart=always \
- novicezk/midjourney-proxy:2.3.5
-```
-3. 访问 `http://ip:port/mj` 查看API文档
-
-附: 不映射config目录方式，直接在启动命令中设置参数
-```shell
-docker run -d --name midjourney-proxy \
- -p 8080:8080 \
- -e mj.discord.guild-id=xxx \
- -e mj.discord.channel-id=xxx \
- -e mj.discord.user-token=xxx \
- --restart=always \
- novicezk/midjourney-proxy:2.3.5
-```
 ## 配置项
 - mj.discord.guild-id：discord服务器ID
 - mj.discord.channel-id：discord频道ID
@@ -72,35 +141,9 @@ docker run -d --name midjourney-proxy \
 - mj.discord.bot-token：自定义机器人Token，user-wss=false时必填
 - 更多配置查看 [Wiki / 配置项](https://github.com/novicezk/midjourney-proxy/wiki/%E9%85%8D%E7%BD%AE%E9%A1%B9)
 
-## Wiki链接
-1. [Wiki / API接口说明](https://github.com/novicezk/midjourney-proxy/wiki/API%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E)
-2. [Wiki / 任务变更回调](https://github.com/novicezk/midjourney-proxy/wiki/%E4%BB%BB%E5%8A%A1%E5%8F%98%E6%9B%B4%E5%9B%9E%E8%B0%83)
-2. [Wiki / 更新记录](https://github.com/novicezk/midjourney-proxy/wiki/%E6%9B%B4%E6%96%B0%E8%AE%B0%E5%BD%95)
-
-## 注意事项
-1. 常见问题及解决办法见 [Wiki / FAQ](https://github.com/novicezk/midjourney-proxy/wiki/FAQ) 
-2. 在 [Issues](https://github.com/novicezk/midjourney-proxy/issues) 中提出其他问题或建议
-3. 感兴趣的朋友也欢迎加入交流群讨论一下，扫码进群名额已满，加管理员微信邀请进群
-
- <img src="https://raw.githubusercontent.com/novicezk/midjourney-proxy/main/docs/manager-qrcode.png" width="320" alt="微信二维码"/>
-
 ## 本地开发
 - 依赖java17和maven
-- 更改配置项: 修改src/main/application.yml
-- 项目运行: 启动ProxyApplication的main函数
-- 更改代码后，构建镜像: Dockerfile取消VOLUME的注释，执行 `docker build . -t midjourney-proxy`
-
-## 应用项目
-- [wechat-midjourney](https://github.com/novicezk/wechat-midjourney) : 代理微信客户端，接入MidJourney，仅示例应用场景，不再更新
-- [stable-diffusion-mobileui](https://github.com/yuanyuekeji/stable-diffusion-mobileui) : SDUI，基于本接口和SD，可一键打包生成H5和小程序
-- [ChatGPT-Midjourney](https://github.com/Licoy/ChatGPT-Midjourney) : 一键拥有你自己的 ChatGPT+Midjourney 网页服务
-- [MidJourney-Web](https://github.com/ConnectAI-E/MidJourney-Web) : 🍎 Supercharged Experience For MidJourney On Web UI
-- [koishi-plugin-midjourney-discord](https://github.com/araea/koishi-plugin-midjourney-discord) : Koishi插件，在Koishi支持的聊天平台中调用Midjourney
-- 依赖此项目且开源的，欢迎联系作者，加到此处展示
 
 ## 其它
-如果觉得这个项目对你有所帮助，请帮忙点个star；也可以请作者喝杯茶～
-
- <img src="https://raw.githubusercontent.com/novicezk/midjourney-proxy/main/docs/receipt-code.png" width="220" alt="二维码"/>
-
-![Star History Chart](https://api.star-history.com/svg?repos=novicezk/midjourney-proxy&type=Date)
+- 多用户依然采用 midjourney-proxy 启动时创建ws链接的方式，因此需要在启动前添加多个账号，由于账号成本太贵，未尝试过作图请求时进行ws链接，推测可能会有封号风险，各位可以自行改动尝试，如果没被封请告知一下；
+- 如果觉得这个项目对你有所帮助，请帮忙点个star；
