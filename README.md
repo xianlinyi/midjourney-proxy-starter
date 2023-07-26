@@ -105,6 +105,12 @@ public class PersonalDiscordConfigService implements DiscordConfigService {
     }
 }
 ```
+6. 启动项目
+```log
+2023-07-27T01:17:24.370+08:00  INFO 62737 --- [           main] com.prechatting.Application              : Started Application in 2.673 seconds (process running for 3.031)
+# 启动日志：项目启动成功后出现以下日志，即为该 DiscordConfig 连接成功，如果配置了多个 DiscordConfig ，则会依次出现多个链接成功日志
+2023-07-27T01:17:32.040+08:00  INFO 62737 --- [  ReadingThread] c.p.wss.user.UserWebSocketStarter        : [gateway] Connected to websocket. userToken:xxx, guildId:xxx, channelId:xxx 
+```
 ## 新增功能
 - [x] 支持配置多个discord账号
 - [x] 支持自定义账号选择策略
