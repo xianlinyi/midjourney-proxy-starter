@@ -5,10 +5,16 @@
 [![GitHub release](https://img.shields.io/static/v1?label=release&message=v2.3.5&color=blue)](https://www.github.com/novicezk/midjourney-proxy)
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
-### 项目介绍
-适用于springboot框架的，可依赖引入项目的MidJourney 的discord频道代理，实现api形式调用AI绘图。
+## 项目介绍
+适用于 springboot 框架的，可依赖引入项目的 MidJourney discord频道代理，实现api形式调用AI绘图。
 
-### 使用方法
+## 更新记录
+### 2.3.6.BETA(使用方法和介绍见dev分支)
+- 2023-07-28：简化discord配置，只需要配置guild-id和user-token即可。
+- 2023-07-28：优化ws链接策略，减少连接数。
+- 2023-07-28：修改任务匹配规则（原项目使用prompt匹配，改为使用userToken+guildId+channelId匹配）避免相同prompt的任务并发执行时导致的任务获取混乱。
+
+## 使用方法
 1. 引入依赖
 ```xml
 <dependency>
