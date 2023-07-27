@@ -20,6 +20,4 @@ public class SubmitBlendDTO extends BaseSubmitDTO {
 	@ApiModelProperty(value = "比例: PORTRAIT(2:3); SQUARE(1:1); LANDSCAPE(3:2)", example = "SQUARE")
 	private BlendDimensions dimensions = BlendDimensions.SQUARE;
 
-	@ApiModelProperty(value = "discord配置")
-	private ProxyProperties.DiscordConfig discordConfig;
 }

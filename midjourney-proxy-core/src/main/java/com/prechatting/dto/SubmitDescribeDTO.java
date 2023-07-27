@@ -14,6 +14,4 @@ public class SubmitDescribeDTO extends BaseSubmitDTO {
 	@ApiModelProperty(value = "图片base64", required = true, example = "data:image/png;base64,xxx")
 	private String base64;
 
-	@ApiModelProperty(value = "discord配置")
-	private ProxyProperties.DiscordConfig discordConfig;
 }

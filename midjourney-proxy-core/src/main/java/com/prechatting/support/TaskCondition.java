@@ -19,6 +19,7 @@ public class TaskCondition implements Predicate<Task> {
 	private Set<TaskStatus> statusSet;
 	private Set<TaskAction> actionSet;
 
+	private DiscordChannel discordChannel;
 	private String prompt;
 	private String promptEn;
 	private String description;

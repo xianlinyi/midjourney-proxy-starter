@@ -18,7 +18,4 @@ public class SubmitImagineDTO extends BaseSubmitDTO {
 	@ApiModelProperty(value = "垫图base64")
 	private String base64;
 
-	@ApiModelProperty(value = "discord配置")
-	private ProxyProperties.DiscordConfig discordConfig;
-
 }

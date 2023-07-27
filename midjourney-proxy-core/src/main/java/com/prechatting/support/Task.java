@@ -26,6 +26,9 @@ public class Task implements Serializable {
 	@ApiModelProperty("提示词-英文")
 	private String promptEn;
 
+	@JsonIgnore
+	private DiscordChannel discordChannel;
+
 	@ApiModelProperty("任务描述")
 	private String description;
 	@ApiModelProperty("自定义参数")

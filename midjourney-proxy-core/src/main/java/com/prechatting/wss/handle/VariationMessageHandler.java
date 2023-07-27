@@ -5,6 +5,7 @@ import com.prechatting.Constants;
 import com.prechatting.enums.MessageType;
 import com.prechatting.enums.TaskAction;
 import com.prechatting.enums.TaskStatus;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
 import com.prechatting.util.UVContentParseData;
@@ -34,7 +35,7 @@ public class VariationMessageHandler extends MessageHandler {
 	private static final String CONTENT_REGEX = "\\*\\*(.*?)\\*\\* - Variations \\(.*?\\) by <@\\d+> \\((.*?)\\)";
 
 	@Override
-	public void handle(MessageType messageType, DataObject message) {
+	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 		String content = getMessageContent(message);
 		if (MessageType.CREATE.equals(messageType)) {
 			UVContentParseData start = parseStart(content);
@@ -69,7 +70,7 @@ public class VariationMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			finishTask(task, message);
+			finishTask(task, message, discordChannel);
 			task.awake();
 		} else if (MessageType.UPDATE == messageType) {
 			UVContentParseData parseData = parse(content);
@@ -100,7 +101,7 @@ public class VariationMessageHandler extends MessageHandler {
 	 * @param message     message
 	 */
 	@Override
-	public void handle(MessageType messageType, Message message) {
+	public void handle(MessageType messageType, Message message, DiscordChannel discordChannel) {
 		String content = message.getContentRaw();
 		if (MessageType.CREATE.equals(messageType)) {
 			UVContentParseData parseData = parse(content);
@@ -117,7 +118,7 @@ public class VariationMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			finishTask(task, message);
+			finishTask(task, message, discordChannel);
 			task.awake();
 		}
 	}

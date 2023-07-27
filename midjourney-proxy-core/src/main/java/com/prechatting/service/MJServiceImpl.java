@@ -10,6 +10,7 @@ import com.prechatting.dto.*;
 import com.prechatting.enums.TaskAction;
 import com.prechatting.enums.TaskStatus;
 import com.prechatting.result.SubmitResultVO;
+import com.prechatting.support.ChannelPool;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
 import com.prechatting.support.TaskQueueHelper;
@@ -75,7 +76,7 @@ public class MJServiceImpl implements MJService {
         }
         task.setPromptEn(promptEn);
         task.setDescription("/imagine " + prompt);
-        return this.taskService.submitImagine(task, dataUrl, imagineDTO.getDiscordConfig());
+        return this.taskService.submitImagine(task, dataUrl);
     }
 
     public SubmitResultVO simpleChange(SubmitSimpleChangeDTO simpleChangeDTO) {
@@ -132,9 +133,9 @@ public class MJServiceImpl implements MJService {
         String messageId = targetTask.getPropertyGeneric(Constants.TASK_PROPERTY_MESSAGE_ID);
         String messageHash = targetTask.getPropertyGeneric(Constants.TASK_PROPERTY_MESSAGE_HASH);
         if (TaskAction.UPSCALE.equals(changeDTO.getAction())) {
-            return this.taskService.submitUpscale(task, messageId, messageHash, changeDTO.getIndex(), messageFlags, changeDTO.getDiscordConfig());
+            return this.taskService.submitUpscale(task, messageId, messageHash, changeDTO.getIndex(), messageFlags);
         } else if (TaskAction.VARIATION.equals(changeDTO.getAction())) {
-            return this.taskService.submitVariation(task, messageId, messageHash, changeDTO.getIndex(), messageFlags, changeDTO.getDiscordConfig());
+            return this.taskService.submitVariation(task, messageId, messageHash, changeDTO.getIndex(), messageFlags);
         } else {
             return SubmitResultVO.fail(ReturnCode.VALIDATION_ERROR, "不支持的操作: " + changeDTO.getAction());
         }
@@ -155,7 +156,7 @@ public class MJServiceImpl implements MJService {
         task.setAction(TaskAction.DESCRIBE);
         String taskFileName = task.getId() + "." + MimeTypeUtils.guessFileSuffix(dataUrl.getMimeType());
         task.setDescription("/describe " + taskFileName);
-        return this.taskService.submitDescribe(task, dataUrl, describeDTO.getDiscordConfig());
+        return this.taskService.submitDescribe(task, dataUrl);
     }
 
     public SubmitResultVO blend(SubmitBlendDTO blendDTO) {
@@ -179,7 +180,7 @@ public class MJServiceImpl implements MJService {
         Task task = newTask(blendDTO);
         task.setAction(TaskAction.BLEND);
         task.setDescription("/blend " + task.getId() + " " + dataUrlList.size());
-        return this.taskService.submitBlend(task, dataUrlList, blendDTO.getDimensions(), blendDTO.getDiscordConfig());
+        return this.taskService.submitBlend(task, dataUrlList, blendDTO.getDimensions());
     }
 
 

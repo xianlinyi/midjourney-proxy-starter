@@ -69,10 +69,6 @@ public class ProxyProperties {
 		 */
 		private String guildId;
 		/**
-		 * 你的频道id.
-		 */
-		private String channelId;
-		/**
 		 * 你的登录token.
 		 */
 		private String userToken;

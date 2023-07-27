@@ -3,6 +3,8 @@ package com.prechatting.wss.user;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.prechatting.ProxyProperties;
+import com.prechatting.support.ChannelPool;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.DiscordHelper;
 import com.prechatting.wss.WebSocketStarter;
 import com.neovisionaries.ws.client.WebSocket;
@@ -17,10 +19,12 @@ import net.dv8tion.jda.api.utils.data.DataType;
 import net.dv8tion.jda.internal.requests.WebSocketCode;
 import net.dv8tion.jda.internal.utils.compress.Decompressor;
 import net.dv8tion.jda.internal.utils.compress.ZlibDecompressor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -28,31 +32,36 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class UserWebSocketStarter extends WebSocketAdapter implements WebSocketStarter {
 	private static final int CONNECT_RETRY_LIMIT = 3;
-
 	private final String userToken;
 	private final String userAgent;
 	private final DataObject auth;
-
 	private ScheduledExecutorService heartExecutor;
 	private WebSocket socket = null;
 	private String sessionId;
 	private Future<?> heartbeatTask;
 	private Decompressor decompressor;
-
 	private boolean connected = false;
 	private final AtomicInteger sequence = new AtomicInteger(0);
-
 	private UserMessageListener userMessageListener;
 	private DiscordHelper discordHelper;
 	private final ProxyProperties.DiscordConfig discordConfig;
-
 	private final ProxyProperties properties;
 
-	public UserWebSocketStarter(ProxyProperties properties,ProxyProperties.DiscordConfig discordConfig,UserMessageListener userMessageListener,DiscordHelper discordHelper) {
+	private final ChannelPool channelPool;
+
+	private Boolean ready = false;
+
+	public Boolean isReady(){
+		return ready;
+	}
+
+	public UserWebSocketStarter(ProxyProperties properties,ProxyProperties.DiscordConfig discordConfig,UserMessageListener
+			userMessageListener,DiscordHelper discordHelper,ChannelPool channelPool) {
 		initProxy(properties);
 		this.discordConfig = discordConfig;
 		this.properties = properties;
@@ -60,6 +69,7 @@ public class UserWebSocketStarter extends WebSocketAdapter implements WebSocketS
 		this.userAgent = discordConfig.getUserAgent();
 		this.userMessageListener = userMessageListener;
 		this.discordHelper = discordHelper;
+		this.channelPool = channelPool;
 		this.auth = createAuthData();
 	}
 
@@ -79,7 +89,7 @@ public class UserWebSocketStarter extends WebSocketAdapter implements WebSocketS
 
 	@Override
 	public void onConnected(WebSocket websocket, Map<String, List<String>> headers) {
-		log.info("[gateway] Connected to websocket. userToken:{}, guildId:{}, channelId:{} ", this.userToken, discordConfig.getGuildId(), discordConfig.getChannelId());
+		log.info("[gateway] Connected to websocket. userToken:{}, guildId:{} ", this.userToken, discordConfig.getGuildId());
 		this.connected = true;
 	}
 
@@ -214,6 +224,14 @@ public class UserWebSocketStarter extends WebSocketAdapter implements WebSocketS
 		String t = raw.getString("t", null);
 		if ("READY".equals(t)) {
 			this.sessionId = content.getString("session_id");
+			List<String> channelIds = getChannelIds(content);
+			for (String channelId : channelIds) {
+				DiscordChannel discordChannel = new DiscordChannel();
+				BeanUtils.copyProperties(discordConfig,discordChannel);
+				discordChannel.setChannelId(channelId);
+				channelPool.addChannel(discordChannel);
+			}
+			this.ready=true;
 			return;
 		}
 		try {
@@ -243,6 +261,21 @@ public class UserWebSocketStarter extends WebSocketAdapter implements WebSocketS
 		return DataObject.empty().put("token", this.userToken).put("capabilities", 4093)
 				.put("properties", connectionProperties).put("presence", presence).put("compress", false)
 				.put("client_state", clientState);
+	}
+
+	private List<String> getChannelIds(DataObject content){
+		List<String> channelIds=new ArrayList<>();
+		DataArray guilds = content.getArray("guilds");
+		DataObject ownGuild = guilds.stream(DataArray::getObject).filter(guild -> guild.getString("id").equals(discordConfig.getGuildId())).findAny().orElse(null);
+		if (null!=ownGuild){
+			DataArray channels = ownGuild.getArray("channels");
+			List<String> collect = channels.stream(DataArray::getObject)
+					.filter(channel -> channel.getString("type").equals("0"))
+					.map(channel -> channel.getString("id"))
+					.toList();
+			channelIds.addAll(collect);
+		}
+		return channelIds;
 	}
 
 }

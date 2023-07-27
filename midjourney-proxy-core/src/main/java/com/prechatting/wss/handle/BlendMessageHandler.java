@@ -6,6 +6,7 @@ import com.prechatting.Constants;
 import com.prechatting.enums.MessageType;
 import com.prechatting.enums.TaskAction;
 import com.prechatting.enums.TaskStatus;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.DiscordHelper;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
@@ -32,7 +33,7 @@ public class BlendMessageHandler extends MessageHandler {
 	private static final String CONTENT_REGEX = "\\*\\*(.*?)\\*\\* - <@\\d+> \\((.*?)\\)";
 
 	@Override
-	public void handle(MessageType messageType, DataObject message) {
+	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 		Optional<DataObject> interaction = message.optObject("interaction");
 		String content = getMessageContent(message);
 		boolean match = CharSequenceUtil.startWith(content, "**<" + DiscordHelper.SIMPLE_URL_PREFIX) || (interaction.isPresent() && "blend".equals(interaction.get().getString("name")));
@@ -77,7 +78,7 @@ public class BlendMessageHandler extends MessageHandler {
 					return;
 				}
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
-				finishTask(task, message);
+				finishTask(task, message, discordChannel);
 				task.awake();
 			}
 		} else if (MessageType.UPDATE == messageType) {
@@ -98,7 +99,7 @@ public class BlendMessageHandler extends MessageHandler {
 	}
 
 	@Override
-	public void handle(MessageType messageType, Message message) {
+	public void handle(MessageType messageType, Message message, DiscordChannel discordChannel) {
 		String content = message.getContentRaw();
 		boolean match = CharSequenceUtil.startWith(content, "**<" + DiscordHelper.SIMPLE_URL_PREFIX) || (message.getInteraction() != null && "blend".equals(message.getInteraction().getName()));
 		if (!match) {
@@ -142,7 +143,7 @@ public class BlendMessageHandler extends MessageHandler {
 					return;
 				}
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
-				finishTask(task, message);
+				finishTask(task, message, discordChannel);
 				task.awake();
 			}
 		} else if (MessageType.UPDATE == messageType) {
