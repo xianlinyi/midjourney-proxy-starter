@@ -9,9 +9,8 @@
         <version>2.3.5</version>
     </parent>
 
-    <groupId>com.prechatting</groupId>
     <artifactId>midjourney-proxy-core</artifactId>
-    <version>2.3.5</version>
+    <version>${parent.version}</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

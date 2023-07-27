@@ -9,15 +9,14 @@
         <version>2.3.5</version>
     </parent>
 
-    <groupId>com.prechatting</groupId>
     <artifactId>midjourney-proxy-starter</artifactId>
-    <version>2.3.5</version>
+    <version>${parent.version}</version>
 
     <dependencies>
         <dependency>
             <groupId>com.prechatting</groupId>
             <artifactId>midjourney-proxy-core</artifactId>
-            <version>2.3.5</version>
+            <version>${parent.version}</version>
         </dependency>
     </dependencies>
 
