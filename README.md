@@ -159,3 +159,6 @@ public class PersonalDiscordConfigService implements DiscordConfigService {
 ## 其它
 - 多用户依然采用 midjourney-proxy 启动时创建ws链接的方式，因此需要在启动前添加多个账号，由于账号成本太贵，未尝试过作图请求时进行ws链接，推测可能会有封号风险，各位可以自行改动尝试，如果没被封请告知一下；
 - 如果觉得这个项目对你有所帮助，请帮忙点个star；
+
+## 联系
+Email：xianlinyi@outlook.com
