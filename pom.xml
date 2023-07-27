@@ -12,7 +12,7 @@
 
     <groupId>com.prechatting</groupId>
     <artifactId>midjourney-proxy</artifactId>
-    <version>2.3.5</version>
+    <version>2.3.6.BETA</version>
     <packaging>pom</packaging>
 
     <modules>

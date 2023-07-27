@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 ### 项目介绍
-适用于springboot框架的，可依赖引入项目的MidJourney 的discord频道代理，实现api形式调用AI绘图。
+适用于 springboot 框架的，可依赖引入项目的 MidJourney discord频道代理，实现api形式调用AI绘图。
 
 ### 使用方法
 1. 引入依赖
