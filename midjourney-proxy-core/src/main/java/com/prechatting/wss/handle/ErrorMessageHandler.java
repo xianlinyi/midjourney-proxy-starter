@@ -3,6 +3,7 @@ package com.prechatting.wss.handle;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.prechatting.enums.MessageType;
 import com.prechatting.enums.TaskAction;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.Optional;
 public class ErrorMessageHandler extends MessageHandler {
 
 	@Override
-	public void handle(MessageType messageType, DataObject message) {
+	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 		Optional<DataArray> embedsOptional = message.optArray("embeds");
 		if (embedsOptional.isEmpty() || embedsOptional.get().isEmpty()) {
 			return;
@@ -82,7 +83,7 @@ public class ErrorMessageHandler extends MessageHandler {
 	}
 
 	@Override
-	public void handle(MessageType messageType, Message message) {
+	public void handle(MessageType messageType, Message message, DiscordChannel discordChannel) {
 		// bot-wss 获取不到错误
 	}
 

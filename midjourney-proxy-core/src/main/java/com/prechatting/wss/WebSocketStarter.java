@@ -5,9 +5,13 @@ import com.neovisionaries.ws.client.ProxySettings;
 import com.neovisionaries.ws.client.WebSocketFactory;
 import io.micrometer.common.util.StringUtils;
 
+
 public interface WebSocketStarter {
 
 	void start() throws Exception;
+
+	Boolean isReady();
+
 
 	default void initProxy(ProxyProperties properties) {
 		ProxyProperties.ProxyConfig proxy = properties.getProxy();
@@ -29,4 +33,5 @@ public interface WebSocketStarter {
 		}
 		return webSocketFactory;
 	}
+
 }

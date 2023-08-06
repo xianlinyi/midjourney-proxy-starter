@@ -2,6 +2,7 @@ package com.prechatting.wss.handle;
 
 
 import com.prechatting.enums.MessageType;
+import com.prechatting.support.DiscordChannel;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.utils.data.DataObject;
 
@@ -16,12 +17,12 @@ import net.dv8tion.jda.api.utils.data.DataObject;
 public class RerollMessageHandler extends MessageHandler {
 
 	@Override
-	public void handle(MessageType messageType, DataObject message) {
+	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 
 	}
 
 	@Override
-	public void handle(MessageType messageType, Message message) {
+	public void handle(MessageType messageType, Message message, DiscordChannel discordChannel) {
 
 	}
 }

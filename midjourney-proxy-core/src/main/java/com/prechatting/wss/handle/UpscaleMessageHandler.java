@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.prechatting.enums.MessageType;
 import com.prechatting.enums.TaskAction;
 import com.prechatting.enums.TaskStatus;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
 import com.prechatting.util.UVContentParseData;
@@ -32,7 +33,7 @@ public class UpscaleMessageHandler extends MessageHandler {
 	private static final String END2_CONTENT_REGEX = "\\*\\*(.*?)\\*\\* - Upscaled by <@\\d+> \\((.*?)\\)";
 
 	@Override
-	public void handle(MessageType messageType, DataObject message) {
+	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 		if (MessageType.CREATE != messageType) {
 			return;
 		}
@@ -67,7 +68,7 @@ public class UpscaleMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			finishTask(task, message);
+			finishTask(task, message,discordChannel);
 			task.awake();
 			return;
 		}
@@ -83,13 +84,13 @@ public class UpscaleMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			finishTask(task, message);
+			finishTask(task, message,discordChannel);
 			task.awake();
 		}
 	}
 
 	@Override
-	public void handle(MessageType messageType, Message message) {
+	public void handle(MessageType messageType, Message message, DiscordChannel discordChannel) {
 		if (MessageType.CREATE != messageType) {
 			return;
 		}
@@ -107,7 +108,7 @@ public class UpscaleMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			finishTask(task, message);
+			finishTask(task, message, discordChannel);
 			task.awake();
 			return;
 		}
@@ -123,7 +124,7 @@ public class UpscaleMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			finishTask(task, message);
+			finishTask(task, message, discordChannel);
 			task.awake();
 		}
 	}

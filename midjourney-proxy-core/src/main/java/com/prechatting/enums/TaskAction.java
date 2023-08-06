@@ -25,7 +25,11 @@ public enum TaskAction {
 	/**
 	 * 多图混合.
 	 */
-	BLEND
+	BLEND,
+	/**
+	 * 图片混合.
+	 */
+	REMIX,
 
 
 }

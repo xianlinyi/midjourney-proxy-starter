@@ -2,6 +2,7 @@ package com.prechatting.controller;
 
 import cn.hutool.core.comparator.CompareUtil;
 import com.prechatting.dto.TaskConditionDTO;
+import com.prechatting.service.MJService;
 import com.prechatting.service.TaskStoreService;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskQueueHelper;
@@ -27,39 +28,30 @@ import java.util.Set;
 @RequestMapping("/task")
 @RequiredArgsConstructor
 public class TaskController {
-	private final TaskStoreService taskStoreService;
-	private final TaskQueueHelper taskQueueHelper;
+	private final MJService mjService;
 
 	@ApiOperation(value = "查询所有任务")
 	@GetMapping("/list")
 	public List<Task> list() {
-		return this.taskStoreService.list().stream()
-				.sorted((t1, t2) -> CompareUtil.compare(t2.getSubmitTime(), t1.getSubmitTime()))
-				.toList();
+		return mjService.list();
 	}
 
 	@ApiOperation(value = "指定ID获取任务")
 	@GetMapping("/{id}/fetch")
 	public Task fetch(@ApiParam(value = "任务ID") @PathVariable String id) {
-		return this.taskStoreService.get(id);
+		return mjService.fetch(id);
 	}
 
 	@ApiOperation(value = "查询任务队列")
 	@GetMapping("/queue")
 	public List<Task> queue() {
-		Set<String> queueTaskIds = this.taskQueueHelper.getQueueTaskIds();
-		return queueTaskIds.stream().map(this.taskStoreService::get).filter(Objects::nonNull)
-				.sorted(Comparator.comparing(Task::getSubmitTime))
-				.toList();
+		return mjService.queue();
 	}
 
 	@ApiOperation(value = "根据条件查询任务")
 	@PostMapping("/list-by-condition")
 	public List<Task> listByCondition(@RequestBody TaskConditionDTO conditionDTO) {
-		if (conditionDTO.getIds() == null) {
-			return Collections.emptyList();
-		}
-		return conditionDTO.getIds().stream().map(this.taskStoreService::get).filter(Objects::nonNull).toList();
+		return mjService.listByCondition(conditionDTO);
 	}
 
 }

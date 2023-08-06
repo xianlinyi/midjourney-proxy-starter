@@ -5,6 +5,7 @@ import com.prechatting.Constants;
 import com.prechatting.enums.MessageType;
 import com.prechatting.enums.TaskAction;
 import com.prechatting.enums.TaskStatus;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
 import com.prechatting.util.ContentParseData;
@@ -30,53 +31,58 @@ public class ImagineMessageHandler extends MessageHandler {
 	private static final String CONTENT_REGEX = "\\*\\*(.*?)\\*\\* - <@\\d+> \\((.*?)\\)";
 
 	@Override
-	public void handle(MessageType messageType, DataObject message) {
+	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 		String content = getMessageContent(message);
 		ContentParseData parseData = parse(content);
 		if (parseData == null) {
 			return;
 		}
-		String realPrompt = this.discordHelper.getRealPrompt(parseData.getPrompt());
 		if (MessageType.CREATE == messageType) {
 			if ("Waiting to start".equals(parseData.getStatus())) {
 				// 开始
 				TaskCondition condition = new TaskCondition()
+						.setDiscordChannel(discordChannel)
 						.setActionSet(Set.of(TaskAction.IMAGINE))
 						.setStatusSet(Set.of(TaskStatus.SUBMITTED));
-				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition, realPrompt))
+				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition))
 						.findFirst().orElse(null);
 				if (task == null) {
 					return;
 				}
-				task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+				task.setProgressMessageId(message.getString("id"));
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 				task.setStatus(TaskStatus.IN_PROGRESS);
 				task.awake();
 			} else {
 				// 完成
+				channelPool.finish(discordChannel,TaskAction.IMAGINE);
+				log.debug("imagine任务完成, message: {}", message);
 				TaskCondition condition = new TaskCondition()
+						.setDiscordChannel(discordChannel)
 						.setActionSet(Set.of(TaskAction.IMAGINE))
 						.setStatusSet(Set.of(TaskStatus.SUBMITTED, TaskStatus.IN_PROGRESS));
-				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition, realPrompt))
+				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition))
 						.findFirst().orElse(null);
+				log.debug("task: {}", task);
 				if (task == null) {
 					return;
 				}
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
-				finishTask(task, message);
+				finishTask(task, message, discordChannel);
 				task.awake();
 			}
 		} else if (MessageType.UPDATE == messageType) {
 			// 进度
 			TaskCondition condition = new TaskCondition()
+					.setDiscordChannel(discordChannel)
 					.setActionSet(Set.of(TaskAction.IMAGINE))
 					.setStatusSet(Set.of(TaskStatus.SUBMITTED, TaskStatus.IN_PROGRESS));
-			Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition, realPrompt))
+			Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition))
 					.findFirst().orElse(null);
 			if (task == null) {
 				return;
 			}
-			task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+			task.setProgressMessageId( message.getString("id"));
 			task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 			task.setStatus(TaskStatus.IN_PROGRESS);
 			task.setProgress(parseData.getStatus());
@@ -86,7 +92,7 @@ public class ImagineMessageHandler extends MessageHandler {
 	}
 
 	@Override
-	public void handle(MessageType messageType, Message message) {
+	public void handle(MessageType messageType, Message message, DiscordChannel discordChannel) {
 		String content = message.getContentRaw();
 		ContentParseData parseData = parse(content);
 		if (parseData == null) {
@@ -97,42 +103,45 @@ public class ImagineMessageHandler extends MessageHandler {
 			if ("Waiting to start".equals(parseData.getStatus())) {
 				// 开始
 				TaskCondition condition = new TaskCondition()
+						.setDiscordChannel(discordChannel)
 						.setActionSet(Set.of(TaskAction.IMAGINE))
 						.setStatusSet(Set.of(TaskStatus.SUBMITTED));
-				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition, realPrompt))
+				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition))
 						.findFirst().orElse(null);
 				if (task == null) {
 					return;
 				}
-				task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getId());
+				task.setProgressMessageId(message.getId());
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 				task.setStatus(TaskStatus.IN_PROGRESS);
 				task.awake();
 			} else {
 				// 完成
 				TaskCondition condition = new TaskCondition()
+						.setDiscordChannel(discordChannel)
 						.setActionSet(Set.of(TaskAction.IMAGINE))
 						.setStatusSet(Set.of(TaskStatus.SUBMITTED, TaskStatus.IN_PROGRESS));
-				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition, realPrompt))
+				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition))
 						.findFirst().orElse(null);
 				if (task == null) {
 					return;
 				}
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
-				finishTask(task, message);
+				finishTask(task, message, discordChannel);
 				task.awake();
 			}
 		} else if (MessageType.UPDATE == messageType) {
 			// 进度
 			TaskCondition condition = new TaskCondition()
+					.setDiscordChannel(discordChannel)
 					.setActionSet(Set.of(TaskAction.IMAGINE))
 					.setStatusSet(Set.of(TaskStatus.SUBMITTED, TaskStatus.IN_PROGRESS));
-			Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition, realPrompt))
+			Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition))
 					.findFirst().orElse(null);
 			if (task == null) {
 				return;
 			}
-			task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getId());
+			task.setProgressMessageId(message.getId());
 			task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 			task.setStatus(TaskStatus.IN_PROGRESS);
 			task.setProgress(parseData.getStatus());
@@ -141,8 +150,13 @@ public class ImagineMessageHandler extends MessageHandler {
 		}
 	}
 
-	private Predicate<Task> taskPredicate(TaskCondition condition, String prompt) {
-		return condition.and(t -> prompt.startsWith(t.getPromptEn()));
+	private Predicate<Task> taskPredicate(TaskCondition condition) {
+		return condition.and(t -> {
+			return t.getDiscordChannel().getUserToken().equals(condition.getDiscordChannel().getUserToken())
+					&& t.getDiscordChannel().getChannelId().equals(condition.getDiscordChannel().getChannelId())
+					&& t.getDiscordChannel().getGuildId().equals(condition.getDiscordChannel().getGuildId());
+					//&& t.getAction().equals(condition.getActionSet());
+		});
 	}
 
 	private ContentParseData parse(String content) {

@@ -9,6 +9,7 @@ import com.prechatting.service.store.InMemoryTaskStoreServiceImpl;
 import com.prechatting.service.store.RedisTaskStoreServiceImpl;
 import com.prechatting.service.translate.BaiduTranslateServiceImpl;
 import com.prechatting.service.translate.GPTTranslateServiceImpl;
+import com.prechatting.support.ChannelPool;
 import com.prechatting.support.DiscordHelper;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskMixin;
@@ -19,7 +20,9 @@ import com.prechatting.wss.handle.BlendMessageHandler;
 import com.prechatting.wss.handle.MessageHandler;
 import com.prechatting.wss.user.UserMessageListener;
 import com.prechatting.wss.user.UserWebSocketStarter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
@@ -35,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Configuration
 public class BeanConfig {
 
@@ -68,19 +72,23 @@ public class BeanConfig {
 	}
 
 	@Bean
-	List<WebSocketStarter> webSocketStarter(ProxyProperties properties, DiscordHelper discordHelper,List<MessageHandler> messageHandlers) {
+	ChannelPool channelPool(DiscordConfigService discordConfigService, ProxyProperties properties) {
+		return new ChannelPool(discordConfigService, properties.getDiscord());
+	}
+
+	@Bean
+	@ConditionalOnBean(ChannelPool.class)
+	List<WebSocketStarter> webSocketStarter(ProxyProperties properties, DiscordHelper discordHelper, List<MessageHandler> messageHandlers, ChannelPool channelPool) {
 		List<ProxyProperties.DiscordConfig> discords = properties.getDiscord();
 		ArrayList<WebSocketStarter> webSocketStarters = new ArrayList<>();
 		for (ProxyProperties.DiscordConfig discord : discords) {
 			if (discord.isUserWss()) {
-				UserMessageListener userMessageListener = new UserMessageListener(discord,messageHandlers);
-				webSocketStarters.add(new UserWebSocketStarter(properties,discord,userMessageListener,discordHelper));
+				UserMessageListener userMessageListener = new UserMessageListener(discord,messageHandlers,channelPool);
+				webSocketStarters.add(new UserWebSocketStarter(properties,discord,userMessageListener,discordHelper,channelPool));
 			}else {
-				BotMessageListener botMessageListener = new BotMessageListener(discord,messageHandlers);
-
-				webSocketStarters.add(new BotWebSocketStarter(properties,discord,botMessageListener,discordHelper));
+				BotMessageListener botMessageListener = new BotMessageListener(discord,messageHandlers,channelPool);
+				webSocketStarters.add(new BotWebSocketStarter(properties,discord,botMessageListener,discordHelper,channelPool));
 			}
-
 		}
 		return webSocketStarters;
 	}
@@ -98,11 +106,32 @@ public class BeanConfig {
 
 
 	@Bean
-	ApplicationRunner enableMetaChangeReceiverInitializer(List<WebSocketStarter> webSocketStarter) {
+	ApplicationRunner enableMetaChangeReceiverInitializer(List<WebSocketStarter> webSocketStarters,ChannelPool channelPool) {
 		return args -> {
-			for (WebSocketStarter socketStarter : webSocketStarter) {
-				socketStarter.start();
+			log.info("[midjourney-proxy-starter] > 正在初始化与discord的连接...");
+			for (WebSocketStarter socketStarter : webSocketStarters) {
+				try {
+					socketStarter.start();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
 			}
+
+			// Wait for all WebSocketStarters to be ready
+			boolean allReady = false;
+			while (!allReady) {
+				allReady = true;
+				for (WebSocketStarter socketStarter : webSocketStarters) {
+					if (!socketStarter.isReady()) {
+						allReady = false;
+						break;
+					}
+				}
+				Thread.sleep(100); // Add a short delay to avoid busy-waiting
+			}
+
+
+			log.info("[midjourney-proxy-starter] > 与discord的连接初始化完成，共获取到 channel：{} 个", channelPool.getChannelCount());
 		};
 	}
 

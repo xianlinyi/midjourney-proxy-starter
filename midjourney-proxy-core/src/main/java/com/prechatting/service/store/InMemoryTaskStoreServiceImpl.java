@@ -4,6 +4,7 @@ import cn.hutool.cache.CacheUtil;
 import cn.hutool.cache.impl.TimedCache;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.stream.StreamUtil;
+import com.prechatting.enums.TaskStatus;
 import com.prechatting.service.TaskStoreService;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
@@ -46,7 +47,7 @@ public class InMemoryTaskStoreServiceImpl implements TaskStoreService {
 
 	@Override
 	public Task findOne(TaskCondition condition) {
-		return StreamUtil.of(this.taskMap.iterator()).filter(condition).findFirst().orElse(null);
+		return StreamUtil.of(this.taskMap.iterator()).filter(condition).filter(task -> task.getStatus().equals(TaskStatus.IN_PROGRESS) && task.getStatus().equals(TaskStatus.SUBMITTED)).findFirst().orElse(null);
 	}
 
 }

@@ -60,6 +60,13 @@ public class TaskQueueHelper {
 		return this.runningTasks.stream().filter(t -> id.equals(t.getId())).findFirst().orElse(null);
 	}
 
+	public Task getRunningTaskByNonce(String nonce) {
+		if (CharSequenceUtil.isBlank(nonce)) {
+			return null;
+		}
+		return this.runningTasks.stream().filter(t -> nonce.equals(t.getNonce())).findFirst().orElse(null);
+	}
+
 	public Stream<Task> findRunningTask(Predicate<Task> condition) {
 		return this.runningTasks.stream().filter(condition);
 	}
@@ -91,6 +98,7 @@ public class TaskQueueHelper {
 	}
 
 	private void executeTask(Task task, Callable<Message<Void>> discordSubmit) {
+		log.debug("task start, id: {}", task.getId());
 		this.runningTasks.add(task);
 		try {
 			task.start();

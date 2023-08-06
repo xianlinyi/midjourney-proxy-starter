@@ -3,6 +3,7 @@ package com.prechatting.wss.handle;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.prechatting.Constants;
 import com.prechatting.enums.MessageType;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.Task;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -20,7 +21,7 @@ import java.util.Optional;
 public class DescribeMessageHandler extends MessageHandler {
 
 	@Override
-	public void handle(MessageType messageType, DataObject message) {
+	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 		Optional<DataObject> interaction = message.optObject("interaction");
 		if (interaction.isEmpty() || !"describe".equals(interaction.get().getString("name"))) {
 			return;
@@ -41,8 +42,8 @@ public class DescribeMessageHandler extends MessageHandler {
 		if (task == null) {
 			return;
 		}
-		task.setProperty(Constants.TASK_PROPERTY_MESSAGE_ID, message.getString("id"));
-		task.setProperty(Constants.TASK_PROPERTY_FLAGS, message.getInt("flags", 0));
+		task.setMessageId(message.getString("id"));
+		task.setFlags( message.getInt("flags", 0));
 		task.setPrompt(prompt);
 		task.setPromptEn(prompt);
 		task.setImageUrl(replaceCdnUrl(imageUrl));
@@ -51,7 +52,7 @@ public class DescribeMessageHandler extends MessageHandler {
 	}
 
 	@Override
-	public void handle(MessageType messageType, Message message) {
+	public void handle(MessageType messageType, Message message, DiscordChannel discordChannel) {
 		if (message.getInteraction() == null || !"describe".equals(message.getInteraction().getName())) {
 			return;
 		}
@@ -67,8 +68,8 @@ public class DescribeMessageHandler extends MessageHandler {
 		if (task == null) {
 			return;
 		}
-		task.setProperty(Constants.TASK_PROPERTY_MESSAGE_ID, message.getId());
-		task.setProperty(Constants.TASK_PROPERTY_FLAGS, (int) message.getFlagsRaw());
+		task.setMessageId(message.getId());
+		task.setFlags( (int) message.getFlagsRaw());
 		task.setPrompt(prompt);
 		task.setPromptEn(prompt);
 		task.setImageUrl(replaceCdnUrl(imageUrl));

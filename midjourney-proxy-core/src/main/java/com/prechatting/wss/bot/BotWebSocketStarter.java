@@ -1,6 +1,7 @@
 package com.prechatting.wss.bot;
 
 import com.prechatting.ProxyProperties;
+import com.prechatting.support.ChannelPool;
 import com.prechatting.support.DiscordHelper;
 import com.prechatting.wss.WebSocketStarter;
 import com.neovisionaries.ws.client.WebSocketFactory;
@@ -17,13 +18,21 @@ public class BotWebSocketStarter implements WebSocketStarter {
 
 	private final ProxyProperties properties;
 
+	private final ChannelPool channelPool;
 
-	public BotWebSocketStarter(ProxyProperties properties,ProxyProperties.DiscordConfig discordConfig,BotMessageListener botMessageListener,DiscordHelper discordHelper) {
+	private Boolean ready = false;
+
+	public Boolean isReady(){
+		return ready;
+	}
+	public BotWebSocketStarter(ProxyProperties properties,ProxyProperties.DiscordConfig discordConfig,
+							   BotMessageListener botMessageListener,DiscordHelper discordHelper,ChannelPool channelPool) {
 		initProxy(properties);
 		this.botMessageListener = botMessageListener;
 		this.discordHelper = discordHelper;
 		this.discordConfig = discordConfig;
 		this.properties = properties;
+		this.channelPool = channelPool;
 	}
 
 	@Override
@@ -36,5 +45,6 @@ public class BotWebSocketStarter implements WebSocketStarter {
 		builder.setSessionController(new CustomSessionController(this.discordHelper.getWss()));
 		builder.setRestConfigProvider(value -> new RestConfig().setBaseUrl(this.discordHelper.getServer() + "/api/v10/"));
 		builder.build();
+		this.ready = true;
 	}
 }

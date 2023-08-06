@@ -3,6 +3,8 @@ package com.prechatting.wss.user;
 
 import com.prechatting.ProxyProperties;
 import com.prechatting.enums.MessageType;
+import com.prechatting.support.ChannelPool;
+import com.prechatting.support.DiscordChannel;
 import com.prechatting.wss.handle.MessageHandler;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.utils.data.DataObject;
@@ -13,13 +15,16 @@ import java.util.List;
 public class UserMessageListener  {
 	private final ProxyProperties.DiscordConfig discordConfig;
 	private final List<MessageHandler> messageHandlers ;
+	private final ChannelPool channelPool;
 
-	public UserMessageListener(ProxyProperties.DiscordConfig discordConfig, List<MessageHandler> messageHandlers) {
+	public UserMessageListener(ProxyProperties.DiscordConfig discordConfig, List<MessageHandler> messageHandlers, ChannelPool channelPool) {
 		this.messageHandlers = messageHandlers;
 		this.discordConfig = discordConfig;
+		this.channelPool = channelPool;
 	}
 
 	public void onMessage(DataObject raw) {
+		log.debug("onMessage {}",raw);
 		MessageType messageType = MessageType.of(raw.getString("t"));
 		if (messageType == null || MessageType.DELETE == messageType) {
 			return;
@@ -28,18 +33,28 @@ public class UserMessageListener  {
 		if (ignoreAndLogMessage(data, messageType)) {
 			return;
 		}
+		DiscordChannel discordChannel = new DiscordChannel();
+		if (MessageType.INTERACTION_SUCCESS != messageType && MessageType.INTERACTION_CREATE != messageType) {
+			discordChannel.setChannelId(data.getString("channel_id"));
+			discordChannel.setGuildId(discordConfig.getGuildId());
+			discordChannel.setUserToken(discordConfig.getUserToken());
+		}
 		for (MessageHandler messageHandler : this.messageHandlers) {
-			messageHandler.handle(messageType, data);
+			messageHandler.handle(messageType, data, discordChannel);
 		}
 	}
 
 	private boolean ignoreAndLogMessage(DataObject data, MessageType messageType) {
+		if (MessageType.INTERACTION_SUCCESS == messageType || MessageType.INTERACTION_CREATE == messageType) {
+			return false;
+		}
 		String channelId = data.getString("channel_id");
-		if (!discordConfig.getChannelId().equals(channelId)) {
+		String id = discordConfig.getUserToken()+discordConfig.getGuildId()+channelId;
+		if (!channelPool.containsChannel(id)) {
 			return true;
 		}
 		String authorName = data.optObject("author").map(a -> a.getString("username")).orElse("System");
-		log.debug("{} - {}: {} => userToken:{} guildId:{} channelID:{}", messageType.name(), authorName, data.opt("content").orElse(""),discordConfig.getUserToken(),discordConfig.getGuildId(),discordConfig.getChannelId());
+		//log.debug("{} - {}: {} => userToken:{} guildId:{} channelID:{}", messageType.name(), authorName, data.opt("content").orElse(""),discordConfig.getUserToken(),discordConfig.getGuildId(),channelId);
 		return false;
 	}
 }
