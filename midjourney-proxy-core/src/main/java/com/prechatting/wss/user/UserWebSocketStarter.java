@@ -6,6 +6,7 @@ import com.prechatting.ProxyProperties;
 import com.prechatting.support.ChannelPool;
 import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.DiscordHelper;
+import com.prechatting.support.TaskQueueHelper;
 import com.prechatting.wss.WebSocketStarter;
 import com.neovisionaries.ws.client.WebSocket;
 import com.neovisionaries.ws.client.WebSocketAdapter;

@@ -2,6 +2,7 @@ package com.prechatting.service;
 
 import com.prechatting.ReturnCode;
 import com.prechatting.enums.BlendDimensions;
+import com.prechatting.enums.TaskAction;
 import com.prechatting.result.Message;
 import com.prechatting.result.SubmitResultVO;
 import com.prechatting.support.ChannelPool;
@@ -28,7 +29,7 @@ public class TaskServiceImpl implements TaskService {
 
 	@Override
 	public SubmitResultVO submitImagine(Task task, DataUrl dataUrl) {
-		DiscordChannel discordChannel = channelPool.getFreeChannel();
+		DiscordChannel discordChannel = channelPool.getFreeChannel(TaskAction.IMAGINE);
 		task.setDiscordChannel(discordChannel);
 		return this.taskQueueHelper.submitTask(task, () -> {
 			if (dataUrl != null) {
@@ -52,22 +53,37 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	@Override
-	public SubmitResultVO submitUpscale(Task task, String targetMessageId, String targetMessageHash, int index, int messageFlags) {
-		DiscordChannel discordChannel = channelPool.getFreeChannel();
+	public SubmitResultVO submitUpscale(Task task, int index) {
+		DiscordChannel discordChannel = channelPool.getFreeChannel(TaskAction.UPSCALE);
 		task.setDiscordChannel(discordChannel);
-		return this.taskQueueHelper.submitTask(task, () -> this.discordService.upscale(targetMessageId, index, targetMessageHash, messageFlags,discordChannel));
+		return this.taskQueueHelper.submitTask(task, () -> this.discordService.upscale(task, index,discordChannel));
 	}
 
 	@Override
-	public SubmitResultVO submitVariation(Task task, String targetMessageId, String targetMessageHash, int index, int messageFlags) {
-		DiscordChannel discordChannel = channelPool.getFreeChannel();
+	public SubmitResultVO submitVariation(Task task ,int index) {
+		DiscordChannel discordChannel = channelPool.getFreeChannel(TaskAction.VARIATION);
 		task.setDiscordChannel(discordChannel);
-		return this.taskQueueHelper.submitTask(task, () -> this.discordService.variation(targetMessageId, index, targetMessageHash, messageFlags,discordChannel));
+		return this.taskQueueHelper.submitTask(task, () -> this.discordService.variation(task,  index, discordChannel));
+	}
+
+	@Override
+	public SubmitResultVO submitRemix(Task task, int index) {
+		DiscordChannel discordChannel = task.getDiscordChannel();
+		String promptEn = task.getPromptEn();
+		String remixPrompt = task.getRemixPrompt();
+		TaskAction taskAction = promptEn.equals(remixPrompt) ? TaskAction.VARIATION : TaskAction.REMIX;
+		boolean status = channelPool.getStatus(discordChannel.getId(),taskAction);
+		if (!status){
+			throw new RuntimeException("channel is busy");
+		}
+		channelPool.setBusy(discordChannel, taskAction);
+		task.setDiscordChannel(discordChannel);
+		return this.taskQueueHelper.submitTask(task, () -> this.discordService.remix(task,index,discordChannel));
 	}
 
 	@Override
 	public SubmitResultVO submitDescribe(Task task, DataUrl dataUrl) {
-		DiscordChannel discordChannel = channelPool.getFreeChannel();
+		DiscordChannel discordChannel = channelPool.getFreeChannel(TaskAction.DESCRIBE);
 		task.setDiscordChannel(discordChannel);
 		return this.taskQueueHelper.submitTask(task, () -> {
 			String taskFileName = task.getId() + "." + MimeTypeUtils.guessFileSuffix(dataUrl.getMimeType());
@@ -82,7 +98,7 @@ public class TaskServiceImpl implements TaskService {
 
 	@Override
 	public SubmitResultVO submitBlend(Task task, List<DataUrl> dataUrls, BlendDimensions dimensions) {
-		DiscordChannel discordChannel = channelPool.getFreeChannel();
+		DiscordChannel discordChannel = channelPool.getFreeChannel(TaskAction.BLEND);
 		task.setDiscordChannel(discordChannel);
 		return this.taskQueueHelper.submitTask(task, () -> {
 			List<String> finalFileNames = new ArrayList<>();

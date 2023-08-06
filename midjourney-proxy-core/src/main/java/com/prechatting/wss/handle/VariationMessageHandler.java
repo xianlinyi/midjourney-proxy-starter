@@ -41,17 +41,11 @@ public class VariationMessageHandler extends MessageHandler {
 			UVContentParseData start = parseStart(content);
 			if (start != null) {
 				// 开始
-				TaskCondition condition = new TaskCondition()
-						.setFinalPromptEn(start.getPrompt())
-						.setActionSet(Set.of(TaskAction.VARIATION))
-						.setStatusSet(Set.of(TaskStatus.SUBMITTED));
-				Task task = this.taskQueueHelper.findRunningTask(condition)
-						.min(Comparator.comparing(Task::getSubmitTime))
-						.orElse(null);
+				Task task = this.taskQueueHelper.getRunningTaskByNonce(message.getString("nonce"));
 				if (task == null) {
 					return;
 				}
-				task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+				task.setProgressMessageId(message.getString("id"));
 				task.setStatus(TaskStatus.IN_PROGRESS);
 				task.awake();
 				return;
@@ -64,8 +58,7 @@ public class VariationMessageHandler extends MessageHandler {
 					.setFinalPromptEn(end.getPrompt())
 					.setActionSet(Set.of(TaskAction.VARIATION))
 					.setStatusSet(Set.of(TaskStatus.SUBMITTED, TaskStatus.IN_PROGRESS));
-			Task task = this.taskQueueHelper.findRunningTask(condition)
-					.max(Comparator.comparing(Task::getProgress))
+			Task task = this.taskQueueHelper.findRunningTask(condition).findAny()
 					.orElse(null);
 			if (task == null) {
 				return;
@@ -86,11 +79,19 @@ public class VariationMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+			task.setProgressMessageId(message.getString("id"));
 			task.setStatus(TaskStatus.IN_PROGRESS);
 			task.setProgress(parseData.getStatus());
 			task.setImageUrl(getImageUrl(message));
 			task.awake();
+		} else if (MessageType.INTERACTION_SUCCESS.equals(messageType)){
+			// remix开启时获取组件id
+			String componentId = message.getString("id");
+			String nonce = message.getString("nonce");
+			Task task = taskQueueHelper.getRunningTaskByNonce(nonce);
+			if (null!=task){
+				task.setComponentId(componentId);
+			}
 		}
 	}
 
@@ -143,7 +144,7 @@ public class VariationMessageHandler extends MessageHandler {
 		return data;
 	}
 
-	private UVContentParseData parse(String content, String regex) {
+	private static UVContentParseData parse(String content, String regex) {
 		Matcher matcher = Pattern.compile(regex).matcher(content);
 		if (!matcher.find()) {
 			return null;
@@ -153,4 +154,7 @@ public class VariationMessageHandler extends MessageHandler {
 		parseData.setStatus(matcher.group(2));
 		return parseData;
 	}
+
+
 }
+

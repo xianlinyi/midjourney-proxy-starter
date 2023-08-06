@@ -61,7 +61,7 @@ public class BlendMessageHandler extends MessageHandler {
 				if (task == null) {
 					return;
 				}
-				task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+				task.setProgressMessageId(message.getString("id"));
 				task.setPrompt(parseData.getPrompt());
 				task.setPromptEn(parseData.getPrompt());
 				task.setStatus(TaskStatus.IN_PROGRESS);
@@ -91,7 +91,7 @@ public class BlendMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+			task.setProgressMessageId(message.getString("id"));
 			task.setProgress(parseData.getStatus());
 			task.setImageUrl(getImageUrl(message));
 			task.awake();
@@ -126,7 +126,7 @@ public class BlendMessageHandler extends MessageHandler {
 				if (task == null) {
 					return;
 				}
-				task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getId());
+				task.setProgressMessageId(message.getId());
 				task.setPrompt(parseData.getPrompt());
 				task.setPromptEn(parseData.getPrompt());
 				task.setStatus(TaskStatus.IN_PROGRESS);
@@ -156,7 +156,7 @@ public class BlendMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getId());
+			task.setProgressMessageId( message.getId());
 			task.setProgress(parseData.getStatus());
 			task.setImageUrl(getImageUrl(message));
 			task.awake();

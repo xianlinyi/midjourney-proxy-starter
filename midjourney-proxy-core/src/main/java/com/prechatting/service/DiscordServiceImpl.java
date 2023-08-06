@@ -3,13 +3,17 @@ package com.prechatting.service;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import com.prechatting.Constants;
 import com.prechatting.ProxyProperties;
 import com.prechatting.ReturnCode;
 import com.prechatting.enums.BlendDimensions;
 import com.prechatting.result.Message;
 import com.prechatting.support.DiscordChannel;
 import com.prechatting.support.DiscordHelper;
+import com.prechatting.support.Task;
+import com.prechatting.util.SnowFlake;
 import eu.maxschuster.dataurl.DataUrl;
+import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -43,6 +47,7 @@ public class DiscordServiceImpl implements DiscordService {
 	private String describeParamsJson;
 	private String blendParamsJson;
 	private String messageParamsJson;
+	private String remixParamsJson;
 
 
 	@PostConstruct
@@ -58,6 +63,7 @@ public class DiscordServiceImpl implements DiscordService {
 		this.describeParamsJson = ResourceUtil.readUtf8Str("api-params/describe.json");
 		this.blendParamsJson = ResourceUtil.readUtf8Str("api-params/blend.json");
 		this.messageParamsJson = ResourceUtil.readUtf8Str("api-params/message.json");
+		this.remixParamsJson = ResourceUtil.readUtf8Str("api-params/remix.json");
 	}
 
 
@@ -66,7 +72,8 @@ public class DiscordServiceImpl implements DiscordService {
 		log.debug("imagine: {}，userToken:{}, guildId:{}, channelId:{}", prompt, discordChannel.getUserToken(), discordChannel.getGuildId(), discordChannel.getChannelId());
 		String paramsStr = this.imagineParamsJson.replace("$guild_id", discordChannel.getGuildId())
 				.replace("$channel_id", discordChannel.getChannelId())
-				.replace("$session_id", discordChannel.getSessionId());
+				.replace("$session_id", discordChannel.getSessionId())
+				.replace("$nonce", SnowFlake.INSTANCE.nextId());
 		JSONObject params = new JSONObject(paramsStr);
 		params.getJSONObject("data").getJSONArray("options").getJSONObject(0)
 				.put("value", prompt);
@@ -74,33 +81,64 @@ public class DiscordServiceImpl implements DiscordService {
 	}
 
 	@Override
-	public Message<Void> upscale(String messageId, int index, String messageHash, int messageFlags, DiscordChannel discordChannel) {
-		String paramsStr = this.imagineParamsJson.replace("$guild_id", discordChannel.getGuildId())
+	public Message<Void> upscale(Task task, int index,DiscordChannel discordChannel) {
+		String paramsStr = this.upscaleParamsJson.replace("$guild_id", discordChannel.getGuildId())
 				.replace("$channel_id", discordChannel.getChannelId())
 				.replace("$session_id", discordChannel.getSessionId())
-				.replace("$message_id", messageId)
+				.replace("$message_id", task.getMessageId())
+				.replace("$nonce", task.getNonce())
 				.replace("$index", String.valueOf(index))
-				.replace("$message_hash", messageHash);
-		paramsStr = new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
+				.replace("$message_hash", task.getMessageHash());
+		paramsStr = new JSONObject(paramsStr).put("message_flags", task.getFlags()).toString();
 		return postJsonAndCheckStatus(paramsStr,discordChannel);
 	}
 
 	@Override
-	public Message<Void> variation(String messageId, int index, String messageHash, int messageFlags, DiscordChannel discordChannel) {
-		String paramsStr = this.imagineParamsJson.replace("$guild_id", discordChannel.getGuildId())
+	public Message<Void> variation(Task task, int index, DiscordChannel discordChannel) {
+		String paramsStr = this.variationParamsJson.replace("$guild_id", discordChannel.getGuildId())
 				.replace("$channel_id", discordChannel.getChannelId())
 				.replace("$session_id", discordChannel.getSessionId())
-				.replace("$message_id", messageId)
 				.replace("$index", String.valueOf(index))
-				.replace("$message_hash", messageHash);
-		paramsStr = new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
+				.replace("$nonce", task.getNonce())
+				.replace("$message_id",task.getMessageId())
+				.replace("$message_hash", task.getMessageHash());
+		paramsStr = new JSONObject(paramsStr).put("message_flags", task.getFlags()).toString();
 		return postJsonAndCheckStatus(paramsStr,discordChannel);
 	}
+
+	@Override
+	public Message<Void> remix(Task task, int index, DiscordChannel discordChannel) {
+		log.debug("[midjouney-proxy-starter] > 当前channel为 {} ",discordChannel);
+		variation(task,index,discordChannel);
+		log.debug("[midjouney-proxy-starter] > 等待返回remix组件id");
+		while (StringUtil.isNullOrEmpty(task.getComponentId())) {
+			synchronized (task) {
+				try {
+					task.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		log.debug("[midjouney-proxy-starter] > remix组件id为 {} ",task.getComponentId());
+		log.debug("[midjouney-proxy-starter] > 调用remix操作");
+		task.setNonce(SnowFlake.INSTANCE.nextId());
+		String paramsStr = this.remixParamsJson.replace("$guild_id", discordChannel.getGuildId())
+				.replace("$channel_id", discordChannel.getChannelId())
+				.replace("$session_id", discordChannel.getSessionId())
+				.replace("$message_hash", task.getMessageHash())
+				.replace("$index", String.valueOf(index))
+				.replace("$nonce", task.getNonce())
+				.replace("$component_id", task.getComponentId())
+				.replace("$prompt", task.getRemixPrompt());
+		return postJsonAndCheckStatus(paramsStr,discordChannel);
+	}
+
 
 	@Override
 	public Message<Void> reroll(String messageId, String messageHash, int messageFlags, DiscordChannel discordChannel) {
 		
-		String paramsStr = this.imagineParamsJson.replace("$guild_id", discordChannel.getGuildId())
+		String paramsStr = this.rerollParamsJson.replace("$guild_id", discordChannel.getGuildId())
 				.replace("$channel_id", discordChannel.getChannelId())
 				.replace("$session_id", discordChannel.getSessionId())
 				.replace("$message_id", messageId)
@@ -113,7 +151,7 @@ public class DiscordServiceImpl implements DiscordService {
 	public Message<Void> describe(String finalFileName, DiscordChannel discordChannel) {
 
 		String fileName = CharSequenceUtil.subAfter(finalFileName, "/", true);
-		String paramsStr = this.imagineParamsJson.replace("$guild_id", discordChannel.getGuildId())
+		String paramsStr = this.describeParamsJson.replace("$guild_id", discordChannel.getGuildId())
 				.replace("$channel_id", discordChannel.getChannelId())
 				.replace("$session_id", discordChannel.getSessionId())
 				.replace("$file_name", fileName)
@@ -123,7 +161,7 @@ public class DiscordServiceImpl implements DiscordService {
 
 	@Override
 	public Message<Void> blend(List<String> finalFileNames, BlendDimensions dimensions, DiscordChannel discordChannel) {
-		String paramsStr = this.imagineParamsJson.replace("$guild_id", discordChannel.getGuildId())
+		String paramsStr = this.blendParamsJson.replace("$guild_id", discordChannel.getGuildId())
 				.replace("$channel_id", discordChannel.getChannelId())
 				.replace("$session_id", discordChannel.getSessionId());
 		JSONObject params = new JSONObject(paramsStr);
@@ -221,6 +259,9 @@ public class DiscordServiceImpl implements DiscordService {
 
 	private Message<Void> postJsonAndCheckStatus(String paramsStr, DiscordChannel discordChannel) {
 		try {
+			log.debug("postJson: {}", paramsStr);
+			//String str ="{\"type\":5,\"application_id\":\"936929561302675456\",\"channel_id\":\"1133395395800731668\",\"guild_id\":\"1133215830201618533\",\"data\":{\"id\":\"1136957307595526194\",\"custom_id\":\"MJ::RemixModal::c11b36f2-5a80-4c8f-b4a3-91801e615cbb::4::1\",\"components\":[{\"type\":1,\"components\":[{\"type\":4,\"custom_id\":\"MJ::RemixModal::new_prompt\",\"value\":\"cat\"}]}]},\"session_id\":\"ebbeb54f1775c76b89ba7b39b469f054\",\"nonce\":\"1136957315283419136\"}";
+			//JSONObject jsonObject = new JSONObject(str);
 			ResponseEntity<String> responseEntity = postJson(paramsStr,discordChannel);
 			log.debug("postJsonAndCheckStatus: {}", responseEntity);
 			if (responseEntity.getStatusCode() == HttpStatus.NO_CONTENT) {

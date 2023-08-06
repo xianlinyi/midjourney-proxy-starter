@@ -12,11 +12,13 @@ public interface TaskService {
 
 	SubmitResultVO submitImagine(Task task, DataUrl dataUrl);
 
-	SubmitResultVO submitUpscale(Task task, String targetMessageId, String targetMessageHash, int index, int messageFlags);
+	SubmitResultVO submitUpscale(Task task, int index);
 
-	SubmitResultVO submitVariation(Task task, String targetMessageId, String targetMessageHash, int index, int messageFlags);
+	SubmitResultVO submitVariation(Task task,  int index);
 
-	SubmitResultVO submitDescribe(Task task, DataUrl dataUrl);
+    SubmitResultVO submitRemix(Task task,  int index);
+
+    SubmitResultVO submitDescribe(Task task, DataUrl dataUrl);
 
 	SubmitResultVO submitBlend(Task task, List<DataUrl> dataUrls, BlendDimensions dimensions);
 }

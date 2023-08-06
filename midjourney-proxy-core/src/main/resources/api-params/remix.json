@@ -1,0 +1,24 @@
+{
+  "type": 5,
+  "application_id": "936929561302675456",
+  "guild_id": "$guild_id",
+  "channel_id": "$channel_id",
+  "data": {
+    "id": "$component_id",
+    "custom_id": "MJ::RemixModal::$message_hash::$index::1",
+    "components": [
+      {
+        "type": 1,
+        "components": [
+          {
+            "type": 4,
+            "custom_id": "MJ::RemixModal::new_prompt",
+            "value": "$prompt"
+          }
+        ]
+      }
+    ]
+  },
+  "session_id": "$session_id",
+  "nonce": "$nonce"
+}

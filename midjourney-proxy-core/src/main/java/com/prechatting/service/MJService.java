@@ -2,6 +2,7 @@ package com.prechatting.service;
 
 import com.prechatting.dto.*;
 import com.prechatting.result.SubmitResultVO;
+import com.prechatting.service.listener.IProgressListener;
 import com.prechatting.support.Task;
 
 import java.util.List;
@@ -14,6 +15,8 @@ public interface MJService {
      * @return
      */
     SubmitResultVO imagine(SubmitImagineDTO imagineDTO);
+
+    SubmitResultVO imagine(SubmitImagineDTO imagineDTO, IProgressListener progressListener);
 
     /**
      * 绘图变化-simple
@@ -28,6 +31,8 @@ public interface MJService {
      * @return
      */
     SubmitResultVO change(SubmitChangeDTO changeDTO);
+
+    SubmitResultVO change(SubmitChangeDTO changeDTO, IProgressListener progressListener);
 
     /**
      * 提交Describe任务

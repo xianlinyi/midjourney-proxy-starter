@@ -33,12 +33,10 @@ public class ImagineMessageHandler extends MessageHandler {
 	@Override
 	public void handle(MessageType messageType, DataObject message, DiscordChannel discordChannel) {
 		String content = getMessageContent(message);
-		log.debug("ImagineMessageHandler: {}", message);
 		ContentParseData parseData = parse(content);
 		if (parseData == null) {
 			return;
 		}
-		String realPrompt = this.discordHelper.getRealPrompt(parseData.getPrompt());
 		if (MessageType.CREATE == messageType) {
 			if ("Waiting to start".equals(parseData.getStatus())) {
 				// 开始
@@ -51,18 +49,21 @@ public class ImagineMessageHandler extends MessageHandler {
 				if (task == null) {
 					return;
 				}
-				task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+				task.setProgressMessageId(message.getString("id"));
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 				task.setStatus(TaskStatus.IN_PROGRESS);
 				task.awake();
 			} else {
 				// 完成
+				channelPool.finish(discordChannel,TaskAction.IMAGINE);
+				log.debug("imagine任务完成, message: {}", message);
 				TaskCondition condition = new TaskCondition()
 						.setDiscordChannel(discordChannel)
 						.setActionSet(Set.of(TaskAction.IMAGINE))
 						.setStatusSet(Set.of(TaskStatus.SUBMITTED, TaskStatus.IN_PROGRESS));
 				Task task = this.taskQueueHelper.findRunningTask(taskPredicate(condition))
 						.findFirst().orElse(null);
+				log.debug("task: {}", task);
 				if (task == null) {
 					return;
 				}
@@ -81,7 +82,7 @@ public class ImagineMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getString("id"));
+			task.setProgressMessageId( message.getString("id"));
 			task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 			task.setStatus(TaskStatus.IN_PROGRESS);
 			task.setProgress(parseData.getStatus());
@@ -110,7 +111,7 @@ public class ImagineMessageHandler extends MessageHandler {
 				if (task == null) {
 					return;
 				}
-				task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getId());
+				task.setProgressMessageId(message.getId());
 				task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 				task.setStatus(TaskStatus.IN_PROGRESS);
 				task.awake();
@@ -140,7 +141,7 @@ public class ImagineMessageHandler extends MessageHandler {
 			if (task == null) {
 				return;
 			}
-			task.setProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID, message.getId());
+			task.setProgressMessageId(message.getId());
 			task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, parseData.getPrompt());
 			task.setStatus(TaskStatus.IN_PROGRESS);
 			task.setProgress(parseData.getStatus());
@@ -154,6 +155,7 @@ public class ImagineMessageHandler extends MessageHandler {
 			return t.getDiscordChannel().getUserToken().equals(condition.getDiscordChannel().getUserToken())
 					&& t.getDiscordChannel().getChannelId().equals(condition.getDiscordChannel().getChannelId())
 					&& t.getDiscordChannel().getGuildId().equals(condition.getDiscordChannel().getGuildId());
+					//&& t.getAction().equals(condition.getActionSet());
 		});
 	}
 

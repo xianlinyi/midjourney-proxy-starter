@@ -16,4 +16,8 @@ public class DiscordChannel {
     private String sessionId = "9c4055428e13bcbf2248a6b36084c5f3";
 
     private String userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
+
+    public String getId(){
+        return this.userToken+ this.guildId+ this.channelId;
+    }
 }

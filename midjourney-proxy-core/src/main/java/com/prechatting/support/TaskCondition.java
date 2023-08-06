@@ -52,17 +52,13 @@ public class TaskCondition implements Predicate<Task> {
 		if (CharSequenceUtil.isNotBlank(this.description) && !this.description.equals(task.getDescription())) {
 			return false;
 		}
-
-		if (CharSequenceUtil.isNotBlank(this.finalPromptEn) && !this.finalPromptEn.equals(task.getProperty(Constants.TASK_PROPERTY_FINAL_PROMPT))) {
-			return false;
-		}
 		if (CharSequenceUtil.isNotBlank(this.relatedTaskId) && !this.relatedTaskId.equals(task.getProperty(Constants.TASK_PROPERTY_RELATED_TASK_ID))) {
 			return false;
 		}
-		if (CharSequenceUtil.isNotBlank(this.messageId) && !this.messageId.equals(task.getProperty(Constants.TASK_PROPERTY_MESSAGE_ID))) {
+		if (CharSequenceUtil.isNotBlank(this.messageId) && !this.messageId.equals(task.getMessageId())) {
 			return false;
 		}
-		if (CharSequenceUtil.isNotBlank(this.progressMessageId) && !this.progressMessageId.equals(task.getProperty(Constants.TASK_PROPERTY_PROGRESS_MESSAGE_ID))) {
+		if (CharSequenceUtil.isNotBlank(this.progressMessageId) && !this.progressMessageId.equals(task.getProgressMessageId())) {
 			return false;
 		}
 		return true;

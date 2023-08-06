@@ -10,12 +10,15 @@ import com.prechatting.dto.*;
 import com.prechatting.enums.TaskAction;
 import com.prechatting.enums.TaskStatus;
 import com.prechatting.result.SubmitResultVO;
+import com.prechatting.service.listener.DefaultProgressListener;
+import com.prechatting.service.listener.IProgressListener;
 import com.prechatting.support.ChannelPool;
 import com.prechatting.support.Task;
 import com.prechatting.support.TaskCondition;
 import com.prechatting.support.TaskQueueHelper;
 import com.prechatting.util.ConvertUtils;
 import com.prechatting.util.MimeTypeUtils;
+import com.prechatting.util.SnowFlake;
 import com.prechatting.util.TaskChangeParams;
 import eu.maxschuster.dataurl.DataUrl;
 import eu.maxschuster.dataurl.DataUrlSerializer;
@@ -42,13 +45,24 @@ public class MJServiceImpl implements MJService {
     private final ProxyProperties properties;
     private final TaskService taskService;
 
-    public SubmitResultVO imagine(SubmitImagineDTO imagineDTO) {
+    public SubmitResultVO imagine(SubmitImagineDTO imagineDTO){
+        DefaultProgressListener defaultProgressListener = new DefaultProgressListener();
+        return doImagine(imagineDTO, defaultProgressListener);
+    }
+
+    public SubmitResultVO imagine(SubmitImagineDTO imagineDTO, IProgressListener listener){
+        return doImagine(imagineDTO, listener);
+    }
+
+    private SubmitResultVO doImagine(SubmitImagineDTO imagineDTO, IProgressListener listener) {
         String prompt = imagineDTO.getPrompt();
         if (CharSequenceUtil.isBlank(prompt)) {
             return SubmitResultVO.fail(ReturnCode.VALIDATION_ERROR, "prompt不能为空");
         }
         prompt = prompt.trim();
         Task task = newTask(imagineDTO);
+        task.setNonce(SnowFlake.INSTANCE.nextId());
+        task.setListener(listener);
         task.setAction(TaskAction.IMAGINE);
         task.setPrompt(prompt);
         String promptEn;
@@ -61,7 +75,7 @@ public class MJServiceImpl implements MJService {
         if (CharSequenceUtil.isBlank(promptEn)) {
             promptEn = prompt;
         }
-        // 放弃敏感词检测
+//        // 放弃敏感词检测
 //		if (BannedPromptUtils.isBanned(promptEn)) {
 //			return SubmitResultVO.fail(ReturnCode.BANNED_PROMPT, "可能包含敏感词");
 //		}
@@ -93,11 +107,16 @@ public class MJServiceImpl implements MJService {
         return change(changeDTO);
     }
 
+
     public SubmitResultVO change(SubmitChangeDTO changeDTO) {
+        return change(changeDTO, new DefaultProgressListener());
+    }
+
+    public SubmitResultVO change(SubmitChangeDTO changeDTO, IProgressListener listener) {
         if (CharSequenceUtil.isBlank(changeDTO.getTaskId())) {
             return SubmitResultVO.fail(ReturnCode.VALIDATION_ERROR, "taskId不能为空");
         }
-        if (!Set.of(TaskAction.UPSCALE, TaskAction.VARIATION, TaskAction.REROLL).contains(changeDTO.getAction())) {
+        if (!Set.of(TaskAction.UPSCALE, TaskAction.VARIATION, TaskAction.REROLL, TaskAction.REMIX).contains(changeDTO.getAction())) {
             return SubmitResultVO.fail(ReturnCode.VALIDATION_ERROR, "action参数错误");
         }
         String description = "/up " + changeDTO.getTaskId();
@@ -108,12 +127,17 @@ public class MJServiceImpl implements MJService {
         }
         TaskCondition condition = new TaskCondition().setDescription(description);
         Task existTask = this.taskStoreService.findOne(condition);
-        if (existTask != null) {
-            return SubmitResultVO.of(ReturnCode.EXISTED, "任务已存在", existTask.getId())
+        if (existTask != null ) {
+            return SubmitResultVO.of(ReturnCode.EXISTED, "任务已存在且正在进行", existTask.getId())
                     .setProperty("status", existTask.getStatus())
                     .setProperty("imageUrl", existTask.getImageUrl());
         }
-        Task targetTask = this.taskStoreService.get(changeDTO.getTaskId());
+        Task targetTask;
+        if (null == changeDTO.getTask()){
+            targetTask = this.taskStoreService.get(changeDTO.getTaskId());
+        }else {
+            targetTask = changeDTO.getTask();
+        }
         if (targetTask == null) {
             return SubmitResultVO.fail(ReturnCode.NOT_FOUND, "关联任务不存在或已失效");
         }
@@ -124,18 +148,26 @@ public class MJServiceImpl implements MJService {
             return SubmitResultVO.fail(ReturnCode.VALIDATION_ERROR, "关联任务不允许执行变化");
         }
         Task task = newTask(changeDTO);
+        task.setNonce(SnowFlake.INSTANCE.nextId());
+        task.setListener(listener);
         task.setAction(changeDTO.getAction());
         task.setPrompt(targetTask.getPrompt());
         task.setPromptEn(targetTask.getPromptEn());
+        task.setMessageId(targetTask.getMessageId());
+        task.setProgressMessageId(targetTask.getProgressMessageId());
+        task.setFlags(targetTask.getFlags());
+        task.setMessageHash(targetTask.getMessageHash());
+        task.setDiscordChannel(targetTask.getDiscordChannel());
         task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, targetTask.getProperty(Constants.TASK_PROPERTY_FINAL_PROMPT));
         task.setDescription(description);
-        int messageFlags = targetTask.getPropertyGeneric(Constants.TASK_PROPERTY_FLAGS);
-        String messageId = targetTask.getPropertyGeneric(Constants.TASK_PROPERTY_MESSAGE_ID);
-        String messageHash = targetTask.getPropertyGeneric(Constants.TASK_PROPERTY_MESSAGE_HASH);
+        task.setRemixPrompt(changeDTO.getRemixPrompt());
+
         if (TaskAction.UPSCALE.equals(changeDTO.getAction())) {
-            return this.taskService.submitUpscale(task, messageId, messageHash, changeDTO.getIndex(), messageFlags);
+            return this.taskService.submitUpscale(task, changeDTO.getIndex());
         } else if (TaskAction.VARIATION.equals(changeDTO.getAction())) {
-            return this.taskService.submitVariation(task, messageId, messageHash, changeDTO.getIndex(), messageFlags);
+            return this.taskService.submitRemix(task, changeDTO.getIndex());
+        } else if (TaskAction.REMIX.equals(changeDTO.getAction())){
+            return this.taskService.submitRemix(task, changeDTO.getIndex());
         } else {
             return SubmitResultVO.fail(ReturnCode.VALIDATION_ERROR, "不支持的操作: " + changeDTO.getAction());
         }

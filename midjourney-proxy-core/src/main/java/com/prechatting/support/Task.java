@@ -3,15 +3,19 @@ package com.prechatting.support;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.prechatting.enums.TaskAction;
 import com.prechatting.enums.TaskStatus;
+import com.prechatting.service.listener.DefaultProgressListener;
+import com.prechatting.service.listener.IProgressListener;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Data
 @ApiModel("任务")
 public class Task implements Serializable {
@@ -25,8 +29,10 @@ public class Task implements Serializable {
 	private String prompt;
 	@ApiModelProperty("提示词-英文")
 	private String promptEn;
+	@ApiModelProperty("remix的提示词")
+	private String remixPrompt;
 
-	@JsonIgnore
+	@ApiModelProperty("任务所属的会话")
 	private DiscordChannel discordChannel;
 
 	@ApiModelProperty("任务描述")
@@ -48,11 +54,39 @@ public class Task implements Serializable {
 	@ApiModelProperty("失败原因")
 	private String failReason;
 
+	/**
+	 * discord的一些参数
+	 */
+	// 临时标识
+	private String nonce;
+	// 操作组件Id
+	private String componentId;
+	private Integer flags;
+	private String messageId;
+	private String progressMessageId;
+	private String messageHash;
+
+
 	// 任务扩展属性，仅支持基本类型
 	private Map<String, Object> properties;
+	@JsonIgnore
+	private IProgressListener listener =new DefaultProgressListener();
+
+
 
 	@JsonIgnore
 	private final transient Object lock = new Object();
+
+
+	public synchronized void setComponentId(String componentId) {
+		this.componentId = componentId;
+		notify();
+	}
+
+	public void setProgress(String progress) {
+		this.progress = progress;
+		listener.onProgress(this);
+	}
 
 	public void sleep() throws InterruptedException {
 		synchronized (this.lock) {
@@ -70,12 +104,14 @@ public class Task implements Serializable {
 		this.startTime = System.currentTimeMillis();
 		this.status = TaskStatus.SUBMITTED;
 		this.progress = "0%";
+		listener.onStart(this);
 	}
 
 	public void success() {
 		this.finishTime = System.currentTimeMillis();
 		this.status = TaskStatus.SUCCESS;
 		this.progress = "100%";
+		listener.onSuccess(this);
 	}
 
 	public void fail(String reason) {
@@ -83,6 +119,7 @@ public class Task implements Serializable {
 		this.status = TaskStatus.FAILURE;
 		this.failReason = reason;
 		this.progress = "";
+		listener.onFail(this);
 	}
 
 	public Task setProperty(String name, Object value) {

@@ -31,14 +31,15 @@ public abstract class MessageHandler {
 	}
 
 	protected void finishTask(Task task, DataObject message,DiscordChannel discordChannel) {
-		channelPool.finish(discordChannel);
-		task.setProperty(Constants.TASK_PROPERTY_MESSAGE_ID, message.getString("id"));
-		task.setProperty(Constants.TASK_PROPERTY_FLAGS, message.getInt("flags", 0));
+		log.debug("finishTask: {}", task);
+		channelPool.finish(discordChannel, task.getAction());
+		task.setMessageId( message.getString("id"));
+		task.setFlags(Integer.valueOf(message.getString("flags", "0")));
 		DataArray attachments = message.getArray("attachments");
 		if (!attachments.isEmpty()) {
 			String imageUrl = attachments.getObject(0).getString("url");
 			task.setImageUrl(replaceCdnUrl(imageUrl));
-			task.setProperty(Constants.TASK_PROPERTY_MESSAGE_HASH, getMessageHash(imageUrl));
+			task.setMessageHash(getMessageHash(imageUrl));
 			task.success();
 		} else {
 			task.fail("关联图片不存在");
@@ -46,13 +47,12 @@ public abstract class MessageHandler {
 	}
 
 	protected void finishTask(Task task, Message message,DiscordChannel discordChannel) {
-		channelPool.finish(discordChannel);
-		task.setProperty(Constants.TASK_PROPERTY_MESSAGE_ID, message.getId());
-		task.setProperty(Constants.TASK_PROPERTY_FLAGS, (int) message.getFlagsRaw());
+		task.setMessageId(message.getId());
+		task.setFlags(Integer.valueOf(String.valueOf(message.getFlagsRaw())));
 		if (!message.getAttachments().isEmpty()) {
 			String imageUrl = message.getAttachments().get(0).getUrl();
 			task.setImageUrl(replaceCdnUrl(imageUrl));
-			task.setProperty(Constants.TASK_PROPERTY_MESSAGE_HASH, getMessageHash(imageUrl));
+			task.setMessageHash(getMessageHash(imageUrl));
 			task.success();
 		} else {
 			task.fail("关联图片不存在");

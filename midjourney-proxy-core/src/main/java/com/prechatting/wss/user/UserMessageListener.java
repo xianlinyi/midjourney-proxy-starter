@@ -15,7 +15,6 @@ import java.util.List;
 public class UserMessageListener  {
 	private final ProxyProperties.DiscordConfig discordConfig;
 	private final List<MessageHandler> messageHandlers ;
-
 	private final ChannelPool channelPool;
 
 	public UserMessageListener(ProxyProperties.DiscordConfig discordConfig, List<MessageHandler> messageHandlers, ChannelPool channelPool) {
@@ -25,17 +24,20 @@ public class UserMessageListener  {
 	}
 
 	public void onMessage(DataObject raw) {
+		log.debug("onMessage {}",raw);
 		MessageType messageType = MessageType.of(raw.getString("t"));
 		if (messageType == null || MessageType.DELETE == messageType) {
 			return;
 		}
 		DataObject data = raw.getObject("d");
-		DiscordChannel discordChannel = new DiscordChannel();
-		discordChannel.setChannelId(data.getString("channel_id"));
-		discordChannel.setGuildId(discordConfig.getGuildId());
-		discordChannel.setUserToken(discordConfig.getUserToken());
 		if (ignoreAndLogMessage(data, messageType)) {
 			return;
+		}
+		DiscordChannel discordChannel = new DiscordChannel();
+		if (MessageType.INTERACTION_SUCCESS != messageType && MessageType.INTERACTION_CREATE != messageType) {
+			discordChannel.setChannelId(data.getString("channel_id"));
+			discordChannel.setGuildId(discordConfig.getGuildId());
+			discordChannel.setUserToken(discordConfig.getUserToken());
 		}
 		for (MessageHandler messageHandler : this.messageHandlers) {
 			messageHandler.handle(messageType, data, discordChannel);
@@ -43,13 +45,16 @@ public class UserMessageListener  {
 	}
 
 	private boolean ignoreAndLogMessage(DataObject data, MessageType messageType) {
+		if (MessageType.INTERACTION_SUCCESS == messageType || MessageType.INTERACTION_CREATE == messageType) {
+			return false;
+		}
 		String channelId = data.getString("channel_id");
 		String id = discordConfig.getUserToken()+discordConfig.getGuildId()+channelId;
 		if (!channelPool.containsChannel(id)) {
 			return true;
 		}
 		String authorName = data.optObject("author").map(a -> a.getString("username")).orElse("System");
-		log.debug("{} - {}: {} => userToken:{} guildId:{} channelID:{}", messageType.name(), authorName, data.opt("content").orElse(""),discordConfig.getUserToken(),discordConfig.getGuildId(),channelId);
+		//log.debug("{} - {}: {} => userToken:{} guildId:{} channelID:{}", messageType.name(), authorName, data.opt("content").orElse(""),discordConfig.getUserToken(),discordConfig.getGuildId(),channelId);
 		return false;
 	}
 }
