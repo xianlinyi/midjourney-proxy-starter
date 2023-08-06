@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.prechatting</groupId>
         <artifactId>midjourney-proxy</artifactId>
-        <version>2.3.6.BETA</version>
+        <version>2.4.0</version>
     </parent>
 
     <artifactId>midjourney-proxy-core</artifactId>
