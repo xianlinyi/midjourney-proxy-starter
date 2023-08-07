@@ -15,9 +15,9 @@
 ## 使用前提
 1. 注册 MidJourney，创建自己的频道，参考 https://docs.midjourney.com/docs/quick-start （需要多大的并发量创建多少个频道）
 2. 将 midjourney 生成模式调整为Remix mode ![docs/remix-mode.png](docs/remix-mode.png)
-2. 获取用户Token、服务器ID：[获取方式](./docs/discord-params.md)
-3. 不同于 midjourney-proxy 本项目将自动获取服务器下存在的所有频道。
-4. 由于任务匹配规则的修改，一个频道只能同一时间生成一张图片，因此 你的并发数==你的频道总数，请根据实际情况调整频道数，或维护一个队列。
+3. 获取用户Token、服务器ID：[获取方式](./docs/discord-params.md)
+4. 不同于 midjourney-proxy 本项目将自动获取服务器下存在的所有频道。
+5. 由于任务匹配规则的修改，一个频道只能同一时间生成一张图片，因此 你的并发数==你的频道总数，请根据实际情况调整频道数，或维护一个队列。
 
 ## 支持功能
 - [x] 支持 Imagine 指令和相关U、V操作
