@@ -1,9 +1,8 @@
 # midjourney-proxy-starter
-
-> 修改自项目：[midjourney-proxy](https://github.com/novicezk/midjourney-proxy)
-
-[![GitHub release](https://img.shields.io/static/v1?label=release&message=v2.3.5&color=blue)](https://www.github.com/novicezk/midjourney-proxy)
+[![GitHub release](https://img.shields.io/static/v1?label=release&message=v2.4.0&color=blue)](https://www.github.com/novicezk/midjourney-proxy)
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+
+> 修改自项目：[midjourney-proxy](https://github.com/novicezk/midjourney-proxy)的2.3.5版本
 
 ## 项目介绍
 适用于 springboot 框架的，可依赖引入项目的 MidJourney discord频道代理，实现api形式调用AI绘图。
