@@ -246,6 +246,8 @@ public class example{
 @ApiModel("变化任务提交参数")
 @EqualsAndHashCode(callSuper = true)
 public class SubmitChangeDTO extends BaseSubmitDTO {
+    @ApiModelProperty(value = "任务ID", required = true, example = "\"1320098173412546\"")
+    private String taskId;
     
 	@ApiModelProperty(value = "任务信息", required = true)
 	private Task task;

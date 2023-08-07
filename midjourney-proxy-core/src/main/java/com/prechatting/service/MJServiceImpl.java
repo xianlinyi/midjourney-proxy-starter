@@ -23,6 +23,7 @@ import com.prechatting.util.TaskChangeParams;
 import eu.maxschuster.dataurl.DataUrl;
 import eu.maxschuster.dataurl.DataUrlSerializer;
 import eu.maxschuster.dataurl.IDataUrlSerializer;
+import io.netty.util.internal.StringUtil;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
@@ -160,7 +161,11 @@ public class MJServiceImpl implements MJService {
         task.setDiscordChannel(targetTask.getDiscordChannel());
         task.setProperty(Constants.TASK_PROPERTY_FINAL_PROMPT, targetTask.getProperty(Constants.TASK_PROPERTY_FINAL_PROMPT));
         task.setDescription(description);
-        task.setRemixPrompt(changeDTO.getRemixPrompt());
+        if (StringUtil.isNullOrEmpty(changeDTO.getRemixPrompt())){
+            task.setRemixPrompt(targetTask.getPromptEn());
+        }else {
+            task.setRemixPrompt(changeDTO.getRemixPrompt());
+        }
 
         if (TaskAction.UPSCALE.equals(changeDTO.getAction())) {
             return this.taskService.submitUpscale(task, changeDTO.getIndex());
