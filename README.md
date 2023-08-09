@@ -39,7 +39,7 @@
 1. 引入依赖
 ```xml
 <dependency>
-    <groupId>com.github.novicezk</groupId>
+    <groupId>com.prechatting</groupId>
     <artifactId>midjourney-proxy-starter</artifactId>
     <version>2.4.0</version>
 </dependency>
